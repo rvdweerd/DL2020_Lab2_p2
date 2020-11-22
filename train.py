@@ -98,7 +98,7 @@ def train(config):
     #device = torch.device('cpu')
 
     # Initialize the dataset and data loader (note the +1)
-    dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=config.seq_length)  # fixme
+    dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=config.seq_length)  
     data_loader = DataLoader(dataset, config.batch_size)
 
     # Initialize the model that we are going to use
