@@ -116,6 +116,7 @@ def train(config):
     optimizer = optim.AdamW(model.parameters(),lr=1e-4)
    
     schedSwitch=0 # simple LR scheduler
+    maxAcc=0
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Only for time measurement of step through network
         t1 = time.time()
@@ -141,7 +142,18 @@ def train(config):
 
         predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
-   
+        
+        # Save model with max accuracy
+        if accuracy > maxAcc:
+            maxAcc=accuracy
+            torch.save({
+            'step': step,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            'accuracy' : accuracy
+            }, "best_model.tar")
+
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
