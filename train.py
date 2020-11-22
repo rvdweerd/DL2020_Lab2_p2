@@ -32,10 +32,50 @@ from dataset import TextDataset
 from model import TextGenerationModel
 
 ###############################################################################
+def test(dataset,data_loader,model,config,device):
+    ###################
+    # Running some tests to see if model works for all input options
+    ###################
+    #############
+    # First Test: Forward pass and manual loss calculation on one minibatch (our training setup)
+    #############
+    (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
+    X = torch.stack(x).to(device)    # (seq_len,bsize)
+    T = torch.stack(t).to(device)
+    T_onehot = torch.nn.functional.one_hot(T,num_classes=dataset._vocab_size)   # (seq_len,bsize,voc_size)
+    h,C = model.init_cell(config.batch_size)
+    logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
+    assert (logprobs.size(0)==config.seq_length and logprobs.size(1)==config.batch_size and logprobs.size(2)==dataset._vocab_size)
+    # Test manual Loss calculation
+    Loss_sum_total = 0  
+    for i in range(logprobs.size(0)):       # sum over all [characters in a sequency] ('timesteps')...
+        for j in range(logprobs.size(1)):   # and all [sequences in batch]
+            Loss_sum_total += logprobs[i][j][T[i][j]]   # and add the logprobs for that particular predicted character
+    # Sanity check: same result when using one hot vectors
+    Loss_sum_total_check = torch.sum(T_onehot*logprobs)
+    assert abs(Loss_sum_total_check - Loss_sum_total)<1e-1
+    #############
+    # Second Test: try forward pass for only one training sequence (batch size = 1, sequence length remains the same)
+    #############
+    X_test = X[:,1].to(device)
+    h,C = model.init_cell(1)
+    logprobs = model(X_test,h,C) # (seq_len,1,voc_size)
+    assert (logprobs.size(0)==config.seq_length and logprobs.size(1)==1 and logprobs.size(2)==dataset._vocab_size)
 
+    #############
+    # Third Test: try forward pass for only one training sequence and one character
+    #############
+    X_test2 = X[0,0].to(device)
+    h,C = model.init_cell(1)
+    logprobs = model(X_test2,h,C) # (1,1,voc_size)
+    assert (logprobs.size(0)==1 and logprobs.size(1)==1 and logprobs.size(2)==dataset._vocab_size)
+    ####################
+    print('Model tests passed..')
+    ####################
+    # End of tests
+    ####################
 
 def train(config):
-
     # Initialize the device which to run the model on
     device = torch.device(config.device)
     #device = torch.device('cpu')
@@ -53,63 +93,35 @@ def train(config):
         config.lstm_num_layers,
         device#config.device
         ).to(device)  # 
-
+    print('device:',device.type)
+    test(dataset,data_loader,model,config,device)
+    
     # Setup the loss and optimizer
     criterion = torch.nn.NLLLoss() 
     optimizer = optim.AdamW(model.parameters(),lr=1e-4)
-
-    (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
-    X = torch.stack(x).to(device)    # (seq_len,bsize)
-    T = torch.stack(t).to(device)
-    T_onehot = torch.nn.functional.one_hot(T,num_classes=dataset._vocab_size)   # (seq_len,bsize,voc_size)
-
-    logprobs = model(X)              # (seq_len,bsize,voc_size)
-
-    Loss_sum_total = 0 # sum over all [sequences in batch] and all [timesteps]
-    for i in range(logprobs.size(0)):
-        for j in range(logprobs.size(1)):
-            Loss_sum_total += logprobs[i][j][T[i][j]]
-    # Sanity check: same result when using one hot vectors?
-    Loss_sum_total_check = torch.sum(T_onehot*logprobs)
-    assert abs(Loss_sum_total_check - Loss_sum_total)<1e-1
-    
-    loss = criterion(logprobs.reshape(config.batch_size * config.seq_length,dataset._vocab_size),T.reshape(-1))
-
-
-    Loss_sum_avg = Loss_sum_total / (config.batch_size * config.seq_length)
-
-    predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
-    accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
-    
+   
     #for step in range(1000):
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
-
         # Only for time measurement of step through network
         t1 = time.time()
-
         #######################################################
         # Add more code here ...
         #######################################################
         X=torch.stack(batch_inputs).to(device)
         T=torch.stack(batch_targets).to(device)
-        
+       
         model.zero_grad()
-        #hidden,cell = model.init_hidden(config.batch_size)
-        logprobs = model(X)              # (seq_len,bsize,voc_size)
-        Loss_sum_total = 0 # sum over all [sequences in batch] and all [timesteps]
-        for i in range(logprobs.size(0)):
-            for j in range(logprobs.size(1)):
-                Loss_sum_total += logprobs[i][j][T[i][j]]
+        h,C = model.init_cell(config.batch_size)
+        logprobs = model(X,h,C) # (seq_len,bsize,voc_size)
+        
         loss = criterion(logprobs.reshape(config.seq_length*config.batch_size,dataset.vocab_size),T.reshape(-1))
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(),
-                                       max_norm=10)
+        torch.nn.utils.clip_grad_norm_(model.parameters(),max_norm=10)
         optimizer.step()
         
         predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
-    
-        #print('loss:',loss,', acc: ',accuracy)
+   
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)

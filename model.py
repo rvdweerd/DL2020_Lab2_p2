@@ -28,7 +28,7 @@ class TextGenerationModel(nn.Module):
         super(TextGenerationModel, self).__init__()
         # Initialization here...
         self.batch_size = batch_size
-        self.seq_length = seq_length
+        #self.seq_length = seq_length
         self.voc_size = vocabulary_size
         self.hidden_dim = lstm_num_hidden
         self.num_layers = lstm_num_layers
@@ -36,18 +36,25 @@ class TextGenerationModel(nn.Module):
         self.input_dim = lstm_num_hidden // 2
         self.embed = nn.Embedding(self.voc_size,self.input_dim)
         self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False) 
-        #self.fc = nn.Linear(self.hidden_dim*self.seq_length,self.voc_size*self.seq_length)
-        self.fc = nn.Linear(self.hidden_dim*self.batch_size,self.voc_size*self.batch_size)
+        self.fc = nn.Linear(self.hidden_dim,self.voc_size) # From hidden vector to output p_t
         self.lsm=nn.LogSoftmax(dim=2) ###CHECK
 
-    def forward(self, x):
+    def forward(self, x, h, C): # h=hidden tensor, C=cell state tensor
         # Implementation here...
-        out = self.embed(x).to(self.device)
-        h0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_dim).to(self.device)
-        C0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_dim).to(self.device)
-        out, (hidden,cell) = self.lstm(out,(h0,C0))
-        #out = out.permute(1,0,2)
-        out = self.fc(out.reshape(out.shape[0],-1))
-        out = out = out.reshape(self.seq_length,self.batch_size,-1)
-        out = self.lsm(out)
+        if len(x.shape) == 0:
+            x=x.unsqueeze(0).unsqueeze(0)   # if sequence length ==1 and batch size ==1, add two dimensions to tensor
+        if len(x.shape) == 1:               # if sequence length >1 and batch size == 1, add batch dimension 
+            x=x.unsqueeze(1)                # in dim 1, following the default nn.LSTM input, this makes x (seq_len,batch_size=1)
+        seq_len = x.size(0)
+        out = self.embed(x).to(self.device) # out (seq_len,batch_size,input_dim)
+        out, (h,C) = self.lstm(out,(h,C))
+        out = self.fc(out.reshape(-1,self.hidden_dim))  # linear layer acts on one character at a time
+        out = out.reshape(seq_len,self.batch_size,-1) # shape back to output tensor (seq_len,batch_size,voc_size)
+        out = self.lsm(out) # apply the log softmax
         return out
+    
+    def init_cell(self, bsize):
+        h = torch.zeros(self.num_layers,bsize,self.hidden_dim).to(self.device)
+        C = torch.zeros(self.num_layers,bsize,self.hidden_dim).to(self.device)
+        self.batch_size=bsize # overwrite in preparation of new data coming in
+        return h,C
