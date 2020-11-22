@@ -32,7 +32,22 @@ from dataset import TextDataset
 from model import TextGenerationModel
 
 ###############################################################################
-def test(dataset,data_loader,model,config,device):
+def printSequence(sequenceTensor,itemInBatch,textdataset):
+    # Prints sequence in column c=itemInBatch contained in stacked sequenceTensor (seq_len,batch_size)
+    seq=sequenceTensor[:,itemInBatch]
+    for ch in seq:
+        if ch.item()==1:
+            print('+',end="")
+        else:
+            print(textdataset.convert_to_string([ch.item()]),end="")
+    #   INDICES
+    print('[',end="")
+    for ch in seq:
+        print(ch.item(),',',end="")
+    print(']')
+
+
+def testLSTM(dataset,data_loader,model,config,device):
     ###################
     # Running some tests to see if model works for all input options
     ###################
@@ -94,21 +109,21 @@ def train(config):
         device#config.device
         ).to(device)  # 
     print('device:',device.type)
-    test(dataset,data_loader,model,config,device)
+    testLSTM(dataset,data_loader,model,config,device)
     
     # Setup the loss and optimizer
     criterion = torch.nn.NLLLoss() 
     optimizer = optim.AdamW(model.parameters(),lr=1e-4)
    
-    #for step in range(1000):
+    schedSwitch=0 # simple LR scheduler
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Only for time measurement of step through network
         t1 = time.time()
         #######################################################
         # Add more code here ...
         #######################################################
-        X=torch.stack(batch_inputs).to(device)
-        T=torch.stack(batch_targets).to(device)
+        X=torch.stack(batch_inputs).to(device)  # (seq_len,bsize), input sequence
+        T=torch.stack(batch_targets).to(device) # (seq_len,bsize), ground truth sequence
        
         model.zero_grad()
         h,C = model.init_cell(config.batch_size)
@@ -119,6 +134,11 @@ def train(config):
         torch.nn.utils.clip_grad_norm_(model.parameters(),max_norm=10)
         optimizer.step()
         
+        if (schedSwitch==0 and loss<1.7):
+          optimizer=optim.AdamW(model.parameters(),lr=config.learning_rate/10)
+          schedSwitch=1
+          print('LR reduced to:',config.learning_rate/10)
+
         predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
    
@@ -138,7 +158,12 @@ def train(config):
 
         if (step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
-            pass
+            print('Input sentence (characters , [charcodes]):')
+            printSequence(X,0,dataset)
+            print('Target sentence (characters , [charcodes]):')
+            printSequence(T,0,dataset)
+            print('Predicted sentence (characters , [charcodes]):')
+            printSequence(predchar,0,dataset)
 
         if step == config.train_steps:
             # If you receive a PyTorch data-loader error,
