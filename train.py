@@ -40,11 +40,22 @@ def train(config):
     device = torch.device(config.device)
 
     # Initialize the dataset and data loader (note the +1)
-    dataset = TextDataset(...)  # fixme
+    dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=config.seq_length)  # fixme
     data_loader = DataLoader(dataset, config.batch_size)
 
     # Initialize the model that we are going to use
-    model = TextGenerationModel(...)  # FIXME
+    model = TextGenerationModel(
+        config.batch_size,
+        config.seq_length,
+        dataset._vocab_size,
+        config.lstm_num_hidden,
+        config.lstm_num_layers,
+        config.device
+        )  # 
+
+    (x,t) = next(iter(data_loader))
+    X=torch.stack(x)
+    y = model(X)
 
     # Setup the loss and optimizer
     criterion = None  # FIXME
@@ -58,6 +69,9 @@ def train(config):
         #######################################################
         # Add more code here ...
         #######################################################
+
+        #hidden,cell = model.init_hidden(config.batch_size)
+
 
         loss = np.inf   # fixme
         accuracy = 0.0  # fixme
@@ -98,7 +112,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Model params
-    parser.add_argument('--txt_file', type=str, required=True,
+    parser.add_argument('--txt_file', type=str, required=False, default="./assets/book_NL_tolstoy_anna_karenina.txt",
                         help="Path to a .txt file to train on")
     parser.add_argument('--seq_length', type=int, default=30,
                         help='Length of an input sequence')
