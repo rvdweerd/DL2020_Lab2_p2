@@ -22,7 +22,7 @@ import torch
 
 class TextGenerationModel(nn.Module):
 
-    def __init__(self,config,vocabulary_size,device='cuda:0'):
+    def __init__(self,config,vocabulary_size,device):
 
         super(TextGenerationModel, self).__init__()
         # Initialization here...

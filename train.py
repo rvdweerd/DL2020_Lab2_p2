@@ -111,7 +111,7 @@ def train(config):
     # Setup the loss and optimizer
     criterion = torch.nn.NLLLoss() 
     optimizer = optim.AdamW(model.parameters(),config.learning_rate)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=5000,gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=config.learning_rate_step,gamma=config.learning_rate_decay)
 
     #schedSwitch=0 # simple LR scheduler
     maxAcc=0
@@ -130,7 +130,7 @@ def train(config):
         
         loss = criterion(logprobs.reshape(config.seq_length*config.batch_size,dataset.vocab_size),T.reshape(-1))
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(),max_norm=10)
+        torch.nn.utils.clip_grad_norm_(model.parameters(),max_norm=config.max_norm)
         #optimizer.step()
         optimizer.step()
         scheduler.step()
@@ -216,7 +216,7 @@ if __name__ == "__main__":
                         help='Learning rate decay fraction')
     parser.add_argument('--learning_rate_step', type=int, default=5000,
                         help='Learning rate step')
-    parser.add_argument('--dropout_keep_prob', type=float, default=1.0,
+    parser.add_argument('--dropout_keep_prob', type=float, default=0.1,
                         help='Dropout keep probability')
 
     parser.add_argument('--train_steps', type=int, default=int(1e6),
