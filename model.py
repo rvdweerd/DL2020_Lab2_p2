@@ -22,20 +22,19 @@ import torch
 
 class TextGenerationModel(nn.Module):
 
-    def __init__(self, batch_size, seq_length, vocabulary_size,
-                 lstm_num_hidden=256, lstm_num_layers=2,drop=0,device='cuda:0'):
+    def __init__(self,config,vocabulary_size,device='cuda:0'):
 
         super(TextGenerationModel, self).__init__()
         # Initialization here...
-        self.batch_size = batch_size
+        self.batch_size = config.batch_size
         #self.seq_length = seq_length
         self.voc_size = vocabulary_size
-        self.hidden_dim = lstm_num_hidden
-        self.num_layers = lstm_num_layers
+        self.hidden_dim = config.lstm_num_hidden
+        self.num_layers = config.lstm_num_layers
         self.device = device
-        self.input_dim = lstm_num_hidden // 2
+        self.input_dim = config.lstm_num_hidden // 2
         self.embed = nn.Embedding(self.voc_size,self.input_dim)
-        self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False,dropout=drop) 
+        self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False,dropout=config.dropout_keep_prob) 
         self.fc = nn.Linear(self.hidden_dim,self.voc_size) # From hidden vector to output p_t
         self.lsm=nn.LogSoftmax(dim=2) ###CHECK
 

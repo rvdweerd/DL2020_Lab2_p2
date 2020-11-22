@@ -102,15 +102,7 @@ def train(config):
     data_loader = DataLoader(dataset, config.batch_size)
 
     # Initialize the model that we are going to use
-    model = TextGenerationModel(
-        config.batch_size,
-        config.seq_length,
-        dataset._vocab_size,
-        config.lstm_num_hidden,
-        config.lstm_num_layers,
-        config.dropout_keep_prob,
-        device
-        ).to(device)  # 
+    model = TextGenerationModel(config,dataset._vocab_size,device).to(device)
     print('device:',device.type)
     print('Model defined. Number of trainable params:',model.numTrainableParameters())
     print(model)
