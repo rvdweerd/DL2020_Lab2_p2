@@ -35,16 +35,18 @@ from model import TextGenerationModel
 def printSequence(sequenceTensor,itemInBatch,textdataset):
     # Prints sequence in column c=itemInBatch contained in stacked sequenceTensor (seq_len,batch_size)
     seq=sequenceTensor[:,itemInBatch]
+    print('[',end="")
     for ch in seq:
         if ch.item()==1:
             print('+',end="")
         else:
             print(textdataset.convert_to_string([ch.item()]),end="")
-    #   INDICES
-    print('[',end="")
-    for ch in seq:
-        print(ch.item(),',',end="")
     print(']')
+    #   INDICES
+    #print('[',end="")
+    #for ch in seq:
+    #    print(ch.item(),',',end="")
+    #print(']')
 
 
 def testLSTM(dataset,data_loader,model,config,device):
@@ -106,16 +108,20 @@ def train(config):
         dataset._vocab_size,
         config.lstm_num_hidden,
         config.lstm_num_layers,
-        device#config.device
+        config.dropout_keep_prob,
+        device
         ).to(device)  # 
     print('device:',device.type)
-    testLSTM(dataset,data_loader,model,config,device)
+    print('Model defined. Number of trainable params:',model.numTrainableParameters())
+    print(model)
+    #testLSTM(dataset,data_loader,model,config,device)
     
     # Setup the loss and optimizer
     criterion = torch.nn.NLLLoss() 
-    optimizer = optim.AdamW(model.parameters(),lr=1e-4)
-   
-    schedSwitch=0 # simple LR scheduler
+    optimizer = optim.AdamW(model.parameters(),config.learning_rate)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=5000,gamma=0.1)
+
+    #schedSwitch=0 # simple LR scheduler
     maxAcc=0
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Only for time measurement of step through network
@@ -133,12 +139,13 @@ def train(config):
         loss = criterion(logprobs.reshape(config.seq_length*config.batch_size,dataset.vocab_size),T.reshape(-1))
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(),max_norm=10)
+        #optimizer.step()
         optimizer.step()
-        
-        if (schedSwitch==0 and loss<1.7):
-          optimizer=optim.AdamW(model.parameters(),lr=config.learning_rate/10)
-          schedSwitch=1
-          print('LR reduced to:',config.learning_rate/10)
+        scheduler.step()
+        #if (schedSwitch==0 and loss<1.7):
+        #  optimizer=optim.AdamW(model.parameters(),lr=config.learning_rate/10)
+        #  schedSwitch=1
+        #  print('LR reduced to:',config.learning_rate/10)
 
         predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
@@ -152,7 +159,7 @@ def train(config):
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
             'accuracy' : accuracy
-            }, "best_model.tar")
+            }, "saved_model.tar")
 
         # Just for time measurement
         t2 = time.time()
@@ -170,13 +177,14 @@ def train(config):
 
         if (step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
-            print('Input sentence (characters , [charcodes]):')
+            print('############ SAMPLE SEQUENCE ##############')
+            print('INPUT....: ',end="")
             printSequence(X,0,dataset)
-            print('Target sentence (characters , [charcodes]):')
+            print('TARGET...: ',end="")
             printSequence(T,0,dataset)
-            print('Predicted sentence (characters , [charcodes]):')
+            print('PREDICTED: ',end="")
             printSequence(predchar,0,dataset)
-
+            print('-------------------------------------------')
         if step == config.train_steps:
             # If you receive a PyTorch data-loader error,
             # check this bug report:
