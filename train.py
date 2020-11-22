@@ -52,15 +52,15 @@ def train(config):
         config.lstm_num_hidden,
         config.lstm_num_layers,
         device#config.device
-        )  # 
+        ).to(device)  # 
 
     # Setup the loss and optimizer
     criterion = torch.nn.NLLLoss() 
     optimizer = optim.AdamW(model.parameters(),lr=1e-4)
 
     (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
-    X = torch.stack(x)               # (seq_len,bsize)
-    T = torch.stack(t)
+    X = torch.stack(x).to(device)    # (seq_len,bsize)
+    T = torch.stack(t).to(device)
     T_onehot = torch.nn.functional.one_hot(T,num_classes=dataset._vocab_size)   # (seq_len,bsize,voc_size)
 
     logprobs = model(X)              # (seq_len,bsize,voc_size)
@@ -73,7 +73,7 @@ def train(config):
     Loss_sum_total_check = torch.sum(T_onehot*logprobs)
     assert abs(Loss_sum_total_check - Loss_sum_total)<1e-1
     
-    loss = criterion(logprobs.reshape(30*64,104),T.reshape(-1))
+    loss = criterion(logprobs.reshape(config.batch_size * config.seq_length,dataset._vocab_size),T.reshape(-1))
 
 
     Loss_sum_avg = Loss_sum_total / (config.batch_size * config.seq_length)
@@ -81,8 +81,8 @@ def train(config):
     predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
     accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
     
-    for step in range(1000):
-    #for step, (batch_inputs, batch_targets) in enumerate(data_loader):
+    #for step in range(1000):
+    for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
         # Only for time measurement of step through network
         t1 = time.time()
@@ -90,6 +90,9 @@ def train(config):
         #######################################################
         # Add more code here ...
         #######################################################
+        X=torch.stack(batch_inputs).to(device)
+        T=torch.stack(batch_targets).to(device)
+        
         model.zero_grad()
         #hidden,cell = model.init_hidden(config.batch_size)
         logprobs = model(X)              # (seq_len,bsize,voc_size)
@@ -106,7 +109,7 @@ def train(config):
         predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
     
-        print('loss:',loss,', acc: ',accuracy)
+        #print('loss:',loss,', acc: ',accuracy)
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
@@ -153,7 +156,7 @@ if __name__ == "__main__":
                         help='Number of LSTM layers in the model')
 
     # Training params
-    parser.add_argument('--batch_size', type=int, default=64,
+    parser.add_argument('--batch_size', type=int, default=32,#64,
                         help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=2e-3,
                         help='Learning rate')
