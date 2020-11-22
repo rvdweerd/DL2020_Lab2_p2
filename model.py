@@ -42,7 +42,7 @@ class TextGenerationModel(nn.Module):
 
     def forward(self, x):
         # Implementation here...
-        out = self.embed(x)
+        out = self.embed(x).to(self.device)
         h0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_dim).to(self.device)
         C0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_dim).to(self.device)
         out, (hidden,cell) = self.lstm(out,(h0,C0))

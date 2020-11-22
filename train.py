@@ -38,6 +38,7 @@ def train(config):
 
     # Initialize the device which to run the model on
     device = torch.device(config.device)
+    #device = torch.device('cpu')
 
     # Initialize the dataset and data loader (note the +1)
     dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=config.seq_length)  # fixme
@@ -50,12 +51,12 @@ def train(config):
         dataset._vocab_size,
         config.lstm_num_hidden,
         config.lstm_num_layers,
-        config.device
+        device#config.device
         )  # 
 
     # Setup the loss and optimizer
-    criterion = None  # FIXME
-    optimizer = None  # FIXME
+    criterion = torch.nn.NLLLoss() 
+    optimizer = optim.AdamW(model.parameters(),lr=1e-4)
 
     (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
     X = torch.stack(x)               # (seq_len,bsize)
@@ -64,11 +65,24 @@ def train(config):
 
     logprobs = model(X)              # (seq_len,bsize,voc_size)
 
-    Losssum = torch.sum()
-    predchar = torch.argmax(Y,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
-
+    Loss_sum_total = 0 # sum over all [sequences in batch] and all [timesteps]
+    for i in range(logprobs.size(0)):
+        for j in range(logprobs.size(1)):
+            Loss_sum_total += logprobs[i][j][T[i][j]]
+    # Sanity check: same result when using one hot vectors?
+    Loss_sum_total_check = torch.sum(T_onehot*logprobs)
+    assert abs(Loss_sum_total_check - Loss_sum_total)<1e-1
     
-    for step, (batch_inputs, batch_targets) in enumerate(data_loader):
+    loss = criterion(logprobs.reshape(30*64,104),T.reshape(-1))
+
+
+    Loss_sum_avg = Loss_sum_total / (config.batch_size * config.seq_length)
+
+    predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
+    accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
+    
+    for step in range(1000):
+    #for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
         # Only for time measurement of step through network
         t1 = time.time()
@@ -76,13 +90,23 @@ def train(config):
         #######################################################
         # Add more code here ...
         #######################################################
-
+        model.zero_grad()
         #hidden,cell = model.init_hidden(config.batch_size)
-
-
-        loss = np.inf   # fixme
-        accuracy = 0.0  # fixme
-
+        logprobs = model(X)              # (seq_len,bsize,voc_size)
+        Loss_sum_total = 0 # sum over all [sequences in batch] and all [timesteps]
+        for i in range(logprobs.size(0)):
+            for j in range(logprobs.size(1)):
+                Loss_sum_total += logprobs[i][j][T[i][j]]
+        loss = criterion(logprobs.reshape(config.seq_length*config.batch_size,dataset.vocab_size),T.reshape(-1))
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(),
+                                       max_norm=10)
+        optimizer.step()
+        
+        predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
+        accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
+    
+        print('loss:',loss,', acc: ',accuracy)
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
