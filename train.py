@@ -53,14 +53,21 @@ def train(config):
         config.device
         )  # 
 
-    (x,t) = next(iter(data_loader))
-    X=torch.stack(x)
-    y = model(X)
-
     # Setup the loss and optimizer
     criterion = None  # FIXME
     optimizer = None  # FIXME
 
+    (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
+    X = torch.stack(x)               # (seq_len,bsize)
+    T = torch.stack(t)
+    T_onehot = torch.nn.functional.one_hot(T,num_classes=dataset._vocab_size)   # (seq_len,bsize,voc_size)
+
+    logprobs = model(X)              # (seq_len,bsize,voc_size)
+
+    Losssum = torch.sum()
+    predchar = torch.argmax(Y,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
+
+    
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
         # Only for time measurement of step through network

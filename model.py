@@ -36,7 +36,8 @@ class TextGenerationModel(nn.Module):
         self.input_dim = lstm_num_hidden // 2
         self.embed = nn.Embedding(self.voc_size,self.input_dim)
         self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False) 
-        self.fc = nn.Linear(self.hidden_dim*self.seq_length,self.voc_size*self.seq_length)
+        #self.fc = nn.Linear(self.hidden_dim*self.seq_length,self.voc_size*self.seq_length)
+        self.fc = nn.Linear(self.hidden_dim*self.batch_size,self.voc_size*self.batch_size)
         self.lsm=nn.LogSoftmax(dim=2) ###CHECK
 
     def forward(self, x):
@@ -45,8 +46,8 @@ class TextGenerationModel(nn.Module):
         h0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_dim).to(self.device)
         C0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_dim).to(self.device)
         out, (hidden,cell) = self.lstm(out,(h0,C0))
-        out = out.permute(1,0,2)
+        #out = out.permute(1,0,2)
         out = self.fc(out.reshape(out.shape[0],-1))
-        out = out = out.reshape(self.batch_size,self.seq_length,-1)
+        out = out = out.reshape(self.seq_length,self.batch_size,-1)
         out = self.lsm(out)
         return out
