@@ -16,21 +16,38 @@ from torch.utils.data import DataLoader
 from dataset import TextDataset
 from model import TextGenerationModel
 
+def testLSTM(dataset,data_loader,model,config,device):
+    # check model performance
+    (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
+    X = torch.stack(x).to(device)    # (seq_len,bsize)
+    T = torch.stack(t).to(device)
+    h,C = model.init_cell(config.batch_size)
+    logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
+    predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
+    accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
+    print('acc:',accuracy)
+    ####################
+    # End of tests
+    ####################
+
+
 def test(config):
     # Initialize the device which to run the model on
     device = torch.device("cpu" if not torch.cuda.is_available() else "cuda")
     #device = torch.device('cpu')
 
     # Initialize the dataset and data loader (note the +1)
-    dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=30)  
+    #dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=30)  
+    dataset = TextDataset(filename=config.txt_file,seq_length=30)  
     data_loader = DataLoader(dataset, 32)
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
-    checkpoint=torch.load("best_model_59%.tar")
+    #checkpoint=torch.load("best_model_59%.tar")
+    checkpoint=torch.load("best_model_annaK_634.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
-
+    testLSTM(dataset,data_loader,model,config,device)
 ###############################################################################
 ###############################################################################
 

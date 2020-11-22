@@ -98,7 +98,7 @@ def train(config):
     #device = torch.device('cpu')
 
     # Initialize the dataset and data loader (note the +1)
-    dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=config.seq_length)  
+    dataset = TextDataset(filename=config.txt_file,seq_length=config.seq_length)  
     data_loader = DataLoader(dataset, config.batch_size)
 
     # Initialize the model that we are going to use
@@ -166,6 +166,7 @@ def train(config):
                     config.train_steps, config.batch_size, examples_per_second,
                     accuracy, loss
                     ))
+            print('best acc',maxAcc)
 
         if (step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
