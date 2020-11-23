@@ -68,6 +68,23 @@ def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=100):
     model.train()
     return accuracy
 
+def generateSequence(dataset,model,device,length=10,startString='A'):
+    model.eval()
+    seq_out=startString
+    h,C = model.init_cell(1)
+    # First, prep the cell with our starting sequence
+    for i in range(len(startString)):
+        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
+        logprobs,h,C = model(charId,h,C)
+    # Now, run the cell independently (its output is fed back into the cell to self-generate)
+    for i in range(length-len(startString)):
+        predchar=torch.argmax(logprobs,dim=2)
+        seq_out+=dataset._ix_to_char[predchar.item()]
+        startId=predchar
+        logprobs,h,C = model(startId,h,C)
+    #model.train()
+    return seq_out
+
 def testLSTM(dataset,data_loader,model,config,device):
     ###################
     # Running some tests to see if model works for all input options
@@ -146,7 +163,7 @@ def train(config):
        
         model.zero_grad()
         h,C = model.init_cell(config.batch_size)
-        logprobs = model(X,h,C) # (seq_len,bsize,voc_size)
+        logprobs,_,_ = model(X,h,C) # (seq_len,bsize,voc_size)
         
         loss = criterion(logprobs.reshape(config.seq_length*config.batch_size,dataset.vocab_size),T.reshape(-1))
         loss.backward()
@@ -162,19 +179,17 @@ def train(config):
         predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
         
-        # Save model with max accuracy
+        # Save model with max train accuracy (I will use this for this toy example with batch_size*seq_len character predictions.
+        # Of course this should be on a larget test dataset
         if accuracy > maxTrainAcc:
             maxTrainAcc=accuracy
-            test_acc=getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=100)
-            if test_acc > maxTestAcc:
-                maxTestAcc=test_acc
-                torch.save({
-                'step': step,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': loss,
-                'accuracy' : accuracy
-                }, "saved_model.tar")
+            torch.save({
+            'step': step,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            'accuracy' : accuracy
+            }, "saved_model.tar")
 
         # Just for time measurement
         t2 = time.time()
@@ -191,6 +206,14 @@ def train(config):
                     ))
             print('best test acc',maxTestAcc)
 
+        if (step+1) % (config.train_steps//3) ==0:
+            startStr='anna'
+            seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+            print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
+            print('#')
+            print('# Example sequence started with',startStr,':',seq_out)
+            print('#')
+            print('##########################################################')
         if (step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
             print('############ SAMPLE SEQUENCE ##############')

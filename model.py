@@ -51,7 +51,7 @@ class TextGenerationModel(nn.Module):
                 
         out = out.reshape(seq_len,self.batch_size,-1) # shape back to output tensor (seq_len,batch_size,voc_size)
         out = self.lsm(out) # apply the log softmax
-        return out
+        return out,h,C
 
     def init_cell(self, bsize):
         h = torch.zeros(self.num_layers,bsize,self.hidden_dim).to(self.device)

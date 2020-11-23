@@ -28,7 +28,7 @@ def testLSTM(dataset,data_loader,model,config,device):
             X = torch.stack(x).to(device)    # (seq_len,bsize)
             T = torch.stack(t).to(device)
             h,C = model.init_cell(config.batch_size)
-            logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
+            logprobs,_,_ = model(X,h,C)          # (seq_len,bsize,voc_size)
             predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
             correct+=torch.sum(predchar==T).item()
             total+=(config.batch_size * config.seq_length)
@@ -39,14 +39,22 @@ def testLSTM(dataset,data_loader,model,config,device):
     # End of tests
     ####################
 
-def runSequency(dataset,model,device,length=10,startCharacter='A'):
+def generateSequence(dataset,model,device,length=10,startString='A'):
     model.eval()
+    seq_out=startString
     h,C = model.init_cell(1)
-    startId=
-    logprobs = model()
-
-    model.train()
-
+    # First, prep the cell with our starting sequence
+    for i in range(len(startString)):
+        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
+        logprobs,h,C = model(charId,h,C)
+    # Now, run the cell independently (its output is fed back into the cell to self-generate)
+    for i in range(length-len(startString)):
+        predchar=torch.argmax(logprobs,dim=2)
+        seq_out+=dataset._ix_to_char[predchar.item()]
+        startId=predchar
+        logprobs,h,C = model(startId,h,C)
+    #model.train()
+    return seq_out
 
 def test(config):
     # Initialize the device which to run the model on
@@ -61,12 +69,14 @@ def test(config):
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
     #checkpoint=torch.load("saved_model.tar")
-    checkpoint=torch.load("best_model_annaK_634.tar")
+    checkpoint=torch.load("best_587.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
-    runSequency(length=10,startCharacter='A')
-
+    startStr='anna'
+    seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+    print('Example sequence started with',startStr,':',seq_out)
+    return
 ###############################################################################
 ###############################################################################
 
