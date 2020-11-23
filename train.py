@@ -82,7 +82,7 @@ def generateSequence(dataset,model,device,length=10,startString='A'):
         seq_out+=dataset._ix_to_char[predchar.item()]
         startId=predchar
         logprobs,h,C = model(startId,h,C)
-    #model.train()
+    model.train()
     return seq_out
 
 def testLSTM(dataset,data_loader,model,config,device):
@@ -151,7 +151,7 @@ def train(config):
 
     #schedSwitch=0 # simple LR scheduler
     maxTrainAcc=0
-    maxTestAcc=0
+    #maxTestAcc=0
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Only for time measurement of step through network
         t1 = time.time()
@@ -204,9 +204,9 @@ def train(config):
                     config.train_steps, config.batch_size, examples_per_second,
                     accuracy, loss
                     ))
-            print('best test acc',maxTestAcc)
+            print('best training acc',maxTrainAcc)
 
-        if (step+1) % (config.train_steps//3) ==0:
+        if (step % 1000) ==0:
             startStr='anna'
             seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
             print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
