@@ -134,7 +134,8 @@ def train(config):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=config.learning_rate_step,gamma=config.learning_rate_decay)
 
     #schedSwitch=0 # simple LR scheduler
-    maxAcc=0
+    maxTrainAcc=0
+    maxTestAcc=0
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Only for time measurement of step through network
         t1 = time.time()
@@ -163,10 +164,10 @@ def train(config):
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
         
         # Save model with max accuracy
-        if accuracy > maxAcc:
+        if accuracy > maxTrainAcc:
             test_acc=getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200)
-            if test_acc > maxAcc:
-                maxAcc=accuracy
+            if test_acc > maxTestAcc:
+                maxTestAcc=test_acc
                 torch.save({
                 'step': step,
                 'model_state_dict': model.state_dict(),
