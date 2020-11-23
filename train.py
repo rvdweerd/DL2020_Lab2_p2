@@ -52,7 +52,6 @@ def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200):
     # check model performance
     correct=0
     total=0
-    numEvalBatches=200
     model.eval()
     with torch.no_grad():
         for i in range(numEvalBatches):
@@ -165,6 +164,7 @@ def train(config):
         
         # Save model with max accuracy
         if accuracy > maxTrainAcc:
+            maxTrainAcc=accuracy
             test_acc=getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200)
             if test_acc > maxTestAcc:
                 maxTestAcc=test_acc

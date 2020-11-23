@@ -39,6 +39,14 @@ def testLSTM(dataset,data_loader,model,config,device):
     # End of tests
     ####################
 
+def runSequency(dataset,model,device,length=10,startCharacter='A'):
+    model.eval()
+    h,C = model.init_cell(1)
+    startId=
+    logprobs = model()
+
+    model.train()
+
 
 def test(config):
     # Initialize the device which to run the model on
@@ -57,6 +65,8 @@ def test(config):
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
+    runSequency(length=10,startCharacter='A')
+
 ###############################################################################
 ###############################################################################
 

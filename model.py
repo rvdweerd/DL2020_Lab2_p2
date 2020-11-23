@@ -32,7 +32,7 @@ class TextGenerationModel(nn.Module):
         self.hidden_dim = config.lstm_num_hidden
         self.num_layers = config.lstm_num_layers
         self.device = device
-        self.input_dim = config.lstm_num_hidden // 2
+        self.input_dim = config.lstm_num_hidden
         self.embed = nn.Embedding(self.voc_size,self.input_dim)
         self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False,dropout=config.dropout_keep_prob) 
         self.fc = nn.Linear(self.hidden_dim,self.voc_size) # From hidden vector to output p_t
