@@ -18,14 +18,23 @@ from model import TextGenerationModel
 
 def testLSTM(dataset,data_loader,model,config,device):
     # check model performance
-    (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
-    X = torch.stack(x).to(device)    # (seq_len,bsize)
-    T = torch.stack(t).to(device)
-    h,C = model.init_cell(config.batch_size)
-    logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
-    predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
-    accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
-    print('acc:',accuracy)
+    correct=0
+    total=0
+    evalBatches=200
+    model.eval()
+    with torch.no_grad():
+        for i in range(evalBatches):
+            (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
+            X = torch.stack(x).to(device)    # (seq_len,bsize)
+            T = torch.stack(t).to(device)
+            h,C = model.init_cell(config.batch_size)
+            logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
+            predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
+            correct+=torch.sum(predchar==T).item()
+            total+=(config.batch_size * config.seq_length)
+        accuracy =correct / total
+    print('accuracy over ',evalBatches*config.batch_size,' sequences:',accuracy)
+    model.train()
     ####################
     # End of tests
     ####################
@@ -43,8 +52,8 @@ def test(config):
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
-    checkpoint=torch.load("saved_model.tar")
-    #checkpoint=torch.load("best_model_annaK_634.tar")
+    #checkpoint=torch.load("saved_model.tar")
+    checkpoint=torch.load("best_model_annaK_634.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)

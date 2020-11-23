@@ -48,6 +48,26 @@ def printSequence(sequenceTensor,itemInBatch,textdataset):
     #    print(ch.item(),',',end="")
     #print(']')
 
+def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200):
+    # check model performance
+    correct=0
+    total=0
+    numEvalBatches=200
+    model.eval()
+    with torch.no_grad():
+        for i in range(numEvalBatches):
+            (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
+            X = torch.stack(x).to(device)    # (seq_len,bsize)
+            T = torch.stack(t).to(device)
+            h,C = model.init_cell(config.batch_size)
+            logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
+            predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
+            correct+=torch.sum(predchar==T).item()
+            total+=(config.batch_size * config.seq_length)
+        accuracy =correct / total
+    print('accuracy over ',numEvalBatches*config.batch_size,' sequences:',accuracy)
+    model.train()
+    return accuracy
 
 def testLSTM(dataset,data_loader,model,config,device):
     ###################
@@ -144,14 +164,16 @@ def train(config):
         
         # Save model with max accuracy
         if accuracy > maxAcc:
-            maxAcc=accuracy
-            torch.save({
-            'step': step,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': loss,
-            'accuracy' : accuracy
-            }, "saved_model.tar")
+            test_acc=getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200)
+            if test_acc > maxAcc:
+                maxAcc=accuracy
+                torch.save({
+                'step': step,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                'accuracy' : accuracy
+                }, "saved_model.tar")
 
         # Just for time measurement
         t2 = time.time()
