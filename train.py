@@ -48,7 +48,7 @@ def printSequence(sequenceTensor,itemInBatch,textdataset):
     #    print(ch.item(),',',end="")
     #print(']')
 
-def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200):
+def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=100):
     # check model performance
     correct=0
     total=0
@@ -165,7 +165,7 @@ def train(config):
         # Save model with max accuracy
         if accuracy > maxTrainAcc:
             maxTrainAcc=accuracy
-            test_acc=getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=200)
+            test_acc=getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=100)
             if test_acc > maxTestAcc:
                 maxTestAcc=test_acc
                 torch.save({
@@ -189,7 +189,7 @@ def train(config):
                     config.train_steps, config.batch_size, examples_per_second,
                     accuracy, loss
                     ))
-            print('best acc',maxAcc)
+            print('best test acc',maxTestAcc)
 
         if (step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
