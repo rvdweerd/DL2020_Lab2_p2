@@ -35,7 +35,9 @@ class TextGenerationModel(nn.Module):
         self.input_dim = config.lstm_num_hidden // 2
         self.embed = nn.Embedding(self.voc_size,self.input_dim)
         self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False,dropout=config.dropout_keep_prob) 
-        self.fc = nn.Linear(self.hidden_dim,self.voc_size) # From hidden vector to output p_t
+        self.fc0=nn.Linear(self.hidden_dim,50)
+        self.fc = nn.Linear(50,self.voc_size) # From hidden vector to output p_t
+        self.relu = torch.nn.ReLU()
         self.lsm=nn.LogSoftmax(dim=2) ###CHECK
 
     def forward(self, x, h, C): # h=hidden tensor, C=cell state tensor
@@ -47,7 +49,10 @@ class TextGenerationModel(nn.Module):
         seq_len = x.size(0)
         out = self.embed(x).to(self.device) # out (seq_len,batch_size,input_dim)
         out, (h,C) = self.lstm(out,(h,C))
-        out = self.fc(out.reshape(-1,self.hidden_dim))  # linear layer acts on one character at a time
+        out = self.fc0(out.reshape(-1,self.hidden_dim))  # linear layer acts on one character at a time
+        out = self.relu(out)
+        out = self.fc(out)
+        
         out = out.reshape(seq_len,self.batch_size,-1) # shape back to output tensor (seq_len,batch_size,voc_size)
         out = self.lsm(out) # apply the log softmax
         return out
