@@ -43,8 +43,8 @@ def test(config):
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
-    #checkpoint=torch.load("best_model_59%.tar")
-    checkpoint=torch.load("best_model_annaK_634.tar")
+    checkpoint=torch.load("saved_model.tar")
+    #checkpoint=torch.load("best_model_annaK_634.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)

@@ -99,7 +99,7 @@ def train(config):
 
     # Initialize the dataset and data loader (note the +1)
     dataset = TextDataset(filename=config.txt_file,seq_length=config.seq_length)  
-    data_loader = DataLoader(dataset, config.batch_size)
+    data_loader = DataLoader(dataset, config.batch_size,num_workers=0)
 
     # Initialize the model that we are going to use
     model = TextGenerationModel(config,dataset._vocab_size,device).to(device)
