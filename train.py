@@ -94,7 +94,13 @@ def train(config):
             'loss': loss,
             'accuracy' : accuracy
             }, "saved_model.tar")
-
+            startStr='anna'
+            seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+            print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
+            print('#')
+            print('# Example sequence started with',startStr,':',seq_out)
+            print('#')
+            print('##########################################################')
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
@@ -110,15 +116,15 @@ def train(config):
                     ))
             print('best training acc',maxTrainAcc)
 
-        if (step % 1000) ==0:
-            # Self-generate a squence based on a starting string input
-            startStr='anna'
-            seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
-            print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
-            print('#')
-            print('# Example sequence started with',startStr,':',seq_out)
-            print('#')
-            print('##########################################################')
+        # if (step % 1000) ==0:
+        #     # Self-generate a squence based on a starting string input
+        #     startStr='anna'
+        #     seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+        #     print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
+        #     print('#')
+        #     print('# Example sequence started with',startStr,':',seq_out)
+        #     print('#')
+        #     print('##########################################################')
         if (step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
             print('############ SAMPLE SEQUENCE ##############')
