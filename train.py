@@ -36,6 +36,15 @@ from utils import *
 ###############################################################################
 
 def train(config):
+    seed=config.seed
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic=True
+        torch.backends.cudnn.benchmark=False
+
     # Initialize the device which to run the model on
     device = torch.device(config.device)
     #device = torch.device('cpu')
@@ -181,6 +190,10 @@ if __name__ == "__main__":
                         help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=2e-3,
                         help='Learning rate')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Seed')
+
+
 
     # It is not necessary to implement the following three params,
     # but it may help training.
