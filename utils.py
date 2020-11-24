@@ -60,25 +60,6 @@ def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=100):
     model.train()
     return accuracy
 
-def generateSequence(dataset,model,device,length=10,startString='A'):
-    # Generates a text sequence from our trained model, based on a string starting input
-    # Used for Q2.1b
-    model.eval()
-    seq_out=startString
-    h,C = model.init_cell(1)
-    # First, prep the cell with our starting sequence
-    for i in range(len(startString)):
-        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
-        logprobs,h,C = model(charId,h,C)
-    # Now, run the cell independently (its output is fed back into the cell to self-generate)
-    for i in range(length-len(startString)):
-        predchar=torch.argmax(logprobs,dim=2)
-        seq_out+=dataset._ix_to_char[predchar.item()]
-        startId=predchar
-        logprobs,h,C = model(startId,h,C)
-    model.train()
-    return seq_out
-
 def generateSequenceGreedy(dataset,model,device,length=10,startString='A'):
     model.eval()
     seq_out=startString
@@ -107,7 +88,7 @@ def generateSequenceRandom(temp,dataset,model,device,length=10,startString='A'):
     # First, prep the cell with our starting sequence
     for i in range(len(startString)):
         charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
-        logprobs,h,C = model(charId,h,C)
+        logprobs,h,C = model(charId,h,C) # forward pass for one character charId
     # Now, run the cell independently (its output is fed back into the cell to self-generate)
     for i in range(length-len(startString)):
         probs = torch.exp(logprobs) # convert back to probs from logprobs

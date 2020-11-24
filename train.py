@@ -92,8 +92,9 @@ def train(config):
         accuracy = torch.sum(predchar==T).item() / (config.batch_size * config.seq_length)
         loss_plt.append(loss)
         acc_plt.append(accuracy)
+
         # Save model with max train accuracy (I will use this for this toy example with batch_size*seq_len character predictions.
-        # Of course this should be on a larget test dataset
+        # Of course this should be based on a larger test dataset
         if accuracy > maxTrainAcc:
             maxTrainAcc=accuracy
             torch.save({
@@ -103,6 +104,7 @@ def train(config):
             'loss': loss,
             'accuracy' : accuracy
             }, "saved_model.tar")
+            # If a new accuracy level (steps of 0.1) is reached, print five self-generated sentences
             if accuracy > selfGenTHRES:
                 selfGenTHRES+=0.1
                 print('\n#################################### SAMPLE SELF GENERATED SEQUENCES #######################################')
@@ -140,25 +142,14 @@ def train(config):
                     ))
             print('best training acc',maxTrainAcc)
 
-        # if (step % 1000) ==0:
-        #     # Self-generate a squence based on a starting string input
-        #     startStr='anna'
-        #     seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
-        #     print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
-        #     print('#')
-        #     print('# Example sequence started with',startStr,':',seq_out)
-        #     print('#')
-        #     print('##########################################################')
-        if False:#(step + 1) % config.sample_every == 0:
+        
+        if (step + 1) % (config.train_steps//3) == 0:
             # Generate some sentences by sampling from the model
-            print('############ SAMPLE SEQUENCE ##############')
-            print('INPUT....: ',end="")
-            printSequence(X,0,dataset)
-            print('TARGET...: ',end="")
-            printSequence(T,0,dataset)
-            print('PREDICTED: ',end="")
-            printSequence(predchar,0,dataset)
-            print('-------------------------------------------')
+            print('\n#################################### SAMPLE SELF GENERATED SEQUENCES #######################################')
+            print('# Step:',step,', loss:',loss,'accuracy',accuracy)
+            print('# Greedy sampling [a...]:',generateSequenceGreedy(dataset,model,device,30,'a'))
+            print('############################################################################################################\n')
+
         if step == config.train_steps:
             # If you receive a PyTorch data-loader error,
             # check this bug report:
