@@ -96,23 +96,28 @@ def train(config):
             }, "saved_model.tar")
             if accuracy > selfGenTHRES:
                 selfGenTHRES+=0.025
-                startStr1='anna'
-                startStr2='what'
-                startStr3='when'
-                startStr4='how'
-                seq_out1=generateSequence(dataset,model,device,length=100,startString=startStr1)
-                seq_out2=generateSequence(dataset,model,device,length=100,startString=startStr2)
-                seq_out3=generateSequence(dataset,model,device,length=100,startString=startStr3)
-                seq_out4=generateSequence(dataset,model,device,length=100,startString=startStr4)
+                startStr='Anna'
+                
                 print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
                 print('# New highest accuracy:',accuracy)
+                print('# Self generated sentencesm start string = Anna')
                 print('#')
-                print('# Example sequence started with',startStr1,':',seq_out1)
-                print('# Example sequence started with',startStr2,':',seq_out2)
-                print('# Example sequence started with',startStr3,':',seq_out3)
-                print('# Example sequence started with',startStr4,':',seq_out4)
+                print('# Greedy samling          :',generateSequenceGreedy(dataset,model,device,length=100,startString=startStr))
+                print('# Random samling, temp=0.1:',generateSequenceRandom(0.1,dataset,model,device,length=100,startString=startStr))
+                print('# Random samling, temp=0.5:',generateSequenceRandom(0.5,dataset,model,device,length=100,startString=startStr))
+                print('# Random samling, temp=1.5:',generateSequenceRandom(1.5,dataset,model,device,length=100,startString=startStr))
+                print('# Random samling, temp=2.0:',generateSequenceRandom(2.0,dataset,model,device,length=100,startString=startStr))
                 print('#')
                 print('##########################################################')
+                print('############ OUTPUR OF LAST TRAINING SAMPLE ##############')
+                print('INPUT....: ',end="")
+                printSequence(X,0,dataset)
+                print('TARGET...: ',end="")
+                printSequence(T,0,dataset)
+                print('PREDICTED: ',end="")
+                printSequence(predchar,0,dataset)
+                print('-------------------------------------------')
+
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
@@ -137,7 +142,7 @@ def train(config):
         #     print('# Example sequence started with',startStr,':',seq_out)
         #     print('#')
         #     print('##########################################################')
-        if (step + 1) % config.sample_every == 0:
+        if False:#(step + 1) % config.sample_every == 0:
             # Generate some sentences by sampling from the model
             print('############ SAMPLE SEQUENCE ##############')
             print('INPUT....: ',end="")

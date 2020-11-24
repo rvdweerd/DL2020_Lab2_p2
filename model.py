@@ -27,7 +27,6 @@ class TextGenerationModel(nn.Module):
         super(TextGenerationModel, self).__init__()
         # Initialization here...
         self.batch_size = config.batch_size
-        #self.seq_length = seq_length
         self.temp=config.lstm_temperature
         self.voc_size = vocabulary_size
         self.hidden_dim = config.lstm_num_hidden
@@ -37,8 +36,8 @@ class TextGenerationModel(nn.Module):
         self.embed = nn.Embedding(self.voc_size,self.input_dim)
         self.lstm = nn.LSTM(self.input_dim,self.hidden_dim,self.num_layers,batch_first=False,dropout=config.dropout_keep_prob) 
         self.fc = nn.Linear(self.hidden_dim,self.voc_size) # From hidden vector to output p_t
-        self.lsm=nn.LogSoftmax(dim=2) ###CHECK
-        print('temp',self.temp)
+        self.lsm=nn.LogSoftmax(dim=2)
+        self.temp=1 # used to enable softmax with temperature after training
     def forward(self, x, h, C): # h=hidden tensor, C=cell state tensor
         # Implementation here...
         if len(x.shape) == 0:
@@ -51,7 +50,7 @@ class TextGenerationModel(nn.Module):
         out = self.fc(out.reshape(-1,self.hidden_dim))  # linear layer acts on one character at a time
                 
         out = out.reshape(seq_len,self.batch_size,-1) # shape back to output tensor (seq_len,batch_size,voc_size)
-        out = self.lsm(out/self.temp) # apply the log softmax (with temperature term optional)
+        out = self.lsm(out/self.temp) # apply the log softmax
         return out,h,C
 
     def init_cell(self, bsize):

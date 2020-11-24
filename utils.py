@@ -79,6 +79,48 @@ def generateSequence(dataset,model,device,length=10,startString='A'):
     model.train()
     return seq_out
 
+def generateSequenceGreedy(dataset,model,device,length=10,startString='A'):
+    model.eval()
+    seq_out=startString
+    h,C = model.init_cell(1)
+    # First, prep the cell with our starting sequence
+    for i in range(len(startString)):
+        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
+        logprobs,h,C = model(charId,h,C)
+    # Now, run the cell independently (its output is fed back into the cell to self-generate)
+    for i in range(length-len(startString)):
+        predchar=torch.argmax(logprobs,dim=2)
+        if predchar.item()==1:
+            seq_out+='+'
+        else:
+            seq_out+=dataset._ix_to_char[predchar.item()]
+        startId=predchar
+        logprobs,h,C = model(startId,h,C)
+    model.train()
+    return seq_out
+
+def generateSequenceRandom(temp,dataset,model,device,length=10,startString='A'):
+    model.eval()
+    model.temp=temp # Set temperature model in logprob calculation
+    seq_out=startString
+    h,C = model.init_cell(1)
+    # First, prep the cell with our starting sequence
+    for i in range(len(startString)):
+        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
+        logprobs,h,C = model(charId,h,C)
+    # Now, run the cell independently (its output is fed back into the cell to self-generate)
+    for i in range(length-len(startString)):
+        probs = torch.exp(logprobs)
+        predchar = torch.multinomial(probs.squeeze(),1)
+        if predchar.item()==1:
+            seq_out+='+'
+        else:
+            seq_out+=dataset._ix_to_char[predchar.item()]
+        startId=predchar
+        logprobs,h,C = model(startId,h,C)
+    model.train()
+    return seq_out
+
 def testLSTM(dataset,data_loader,model,config,device):
     ###################
     # Running some tests to see if model works for all input options

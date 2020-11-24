@@ -39,7 +39,7 @@ def testLSTM(dataset,data_loader,model,config,device):
     # End of tests
     ####################
 
-def generateSequence(dataset,model,device,length=10,startString='A'):
+def generateSequenceGreedy(dataset,model,device,length=10,startString='A'):
     model.eval()
     seq_out=startString
     h,C = model.init_cell(1)
@@ -50,10 +50,35 @@ def generateSequence(dataset,model,device,length=10,startString='A'):
     # Now, run the cell independently (its output is fed back into the cell to self-generate)
     for i in range(length-len(startString)):
         predchar=torch.argmax(logprobs,dim=2)
-        seq_out+=dataset._ix_to_char[predchar.item()]
+        if predchar.item()==1:
+            seq_out+='+'
+        else:
+            seq_out+=dataset._ix_to_char[predchar.item()]
         startId=predchar
         logprobs,h,C = model(startId,h,C)
-    #model.train()
+    model.train()
+    return seq_out
+
+def generateSequenceRandom(temp,dataset,model,device,length=10,startString='A'):
+    model.eval()
+    model.temp=temp # Set temperature model in logprob calculation
+    seq_out=startString
+    h,C = model.init_cell(1)
+    # First, prep the cell with our starting sequence
+    for i in range(len(startString)):
+        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
+        logprobs,h,C = model(charId,h,C)
+    # Now, run the cell independently (its output is fed back into the cell to self-generate)
+    for i in range(length-len(startString)):
+        probs = torch.exp(logprobs)
+        predchar = torch.multinomial(probs.squeeze(),1)
+        if predchar.item()==1:
+            seq_out+='+'
+        else:
+            seq_out+=dataset._ix_to_char[predchar.item()]
+        startId=predchar
+        logprobs,h,C = model(startId,h,C)
+    model.train()
     return seq_out
 
 def test(config):
@@ -68,21 +93,18 @@ def test(config):
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
-    checkpoint=torch.load("saved_model.tar")
-    #checkpoint=torch.load("best_annaK_587.tar")
+    #checkpoint=torch.load("saved_model.tar")
+    checkpoint=torch.load("AnnaK_607.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
-    model.temp=1
+
     startStr='anna'
-    seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
-    print('Example sequence started with',startStr,':',seq_out)
-    
-    model.temp=2
-    startStr='anna'
-    seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
-    print('Example sequence started with',startStr,':',seq_out)
-    
+    seq_out=generateSequenceGreedy(dataset,model,device,length=100,startString=startStr)
+    print('Example sequence started with [',startStr,']:',seq_out)
+    temp=3
+    seq_out=generateSequenceRandom(temp,dataset,model,device,length=100,startString=startStr)
+    print('Temperature=',temp,'- Example sequence started with [',startStr,']:',seq_out)
     return
 ###############################################################################
 ###############################################################################
