@@ -27,7 +27,6 @@ class TextGenerationModel(nn.Module):
         super(TextGenerationModel, self).__init__()
         # Initialization here...
         self.batch_size = config.batch_size
-        self.temp=config.lstm_temperature
         self.voc_size = vocabulary_size
         self.hidden_dim = config.lstm_num_hidden
         self.num_layers = config.lstm_num_layers

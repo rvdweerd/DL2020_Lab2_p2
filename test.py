@@ -123,7 +123,6 @@ if __name__ == "__main__":
                         help='Number of hidden units in the LSTM')
     parser.add_argument('--lstm_num_layers', type=int, default=2,
                         help='Number of LSTM layers in the model')
-    parser.add_argument('--lstm_temperature',type=int,default=1,help='temperature used in softmax')
 
     # Training params
     parser.add_argument('--batch_size', type=int, default=32,#64,
