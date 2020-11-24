@@ -95,18 +95,15 @@ def train(config):
             'accuracy' : accuracy
             }, "saved_model.tar")
             if accuracy > selfGenTHRES:
-                selfGenTHRES+=0.025
-                startStr='Anna'
-                
-                print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
-                print('# New highest accuracy:',accuracy)
-                print('# Self generated sentencesm start string = Anna')
-                print('#')
-                print('# Greedy sampling          :',generateSequenceGreedy(dataset,model,device,length=100,startString=startStr))
-                print('# Random sampling, temp=0.1:',generateSequenceRandom(0.1,dataset,model,device,length=100,startString=startStr))
-                print('# Random sampling, temp=0.5:',generateSequenceRandom(0.5,dataset,model,device,length=100,startString=startStr))
-                print('# Random sampling, temp=1.5:',generateSequenceRandom(1.5,dataset,model,device,length=100,startString=startStr))
-                print('# Random sampling, temp=2.0:',generateSequenceRandom(2.0,dataset,model,device,length=100,startString=startStr))
+                selfGenTHRES+=0.1
+                print('########### SAMPLE SELF GENERATED SEQUENCES ###############')
+                print('# Step:',step,', loss:',loss,'accuracy',accuracy)
+                print('# ')
+                print('# Greedy sampling [a...]:',generateSequenceGreedy(dataset,model,device,100,'a'))
+                print('# Greedy sampling [b...]:',generateSequenceGreedy(dataset,model,device,100,'a'))
+                print('# Greedy sampling [c...]:',generateSequenceGreedy(dataset,model,device,100,'a'))
+                print('# Greedy sampling [d...]:',generateSequenceGreedy(dataset,model,device,100,'a'))
+                print('# Greedy sampling [e...]:',generateSequenceGreedy(dataset,model,device,100,'a'))
                 print('#')
                 print('############ OUTPUT OF LAST TRAINING SAMPLE ##############')
                 print('INPUT....: ',end="")

@@ -16,7 +16,10 @@ from torch.utils.data import DataLoader
 from dataset import TextDataset
 from model import TextGenerationModel
 
-def testLSTM(dataset,data_loader,model,config,device):
+from utils import *
+# This demo file loads a pre-trained SLTM model, tests its accuracy and produces self-generated sentences
+
+def testAccuracyLSTM(dataset,data_loader,model,config,device):
     # check model performance
     correct=0
     total=0
@@ -35,51 +38,11 @@ def testLSTM(dataset,data_loader,model,config,device):
         accuracy =correct / total
     print('accuracy over ',evalBatches*config.batch_size,' sequences:',accuracy)
     model.train()
+    return accuracy
     ####################
     # End of tests
     ####################
 
-def generateSequenceGreedy(dataset,model,device,length=10,startString='A'):
-    model.eval()
-    seq_out=startString
-    h,C = model.init_cell(1)
-    # First, prep the cell with our starting sequence
-    for i in range(len(startString)):
-        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
-        logprobs,h,C = model(charId,h,C)
-    # Now, run the cell independently (its output is fed back into the cell to self-generate)
-    for i in range(length-len(startString)):
-        predchar=torch.argmax(logprobs,dim=2)
-        if predchar.item()==1:
-            seq_out+='+'
-        else:
-            seq_out+=dataset._ix_to_char[predchar.item()]
-        startId=predchar
-        logprobs,h,C = model(startId,h,C)
-    model.train()
-    return seq_out
-
-def generateSequenceRandom(temp,dataset,model,device,length=10,startString='A'):
-    model.eval()
-    model.temp=temp # Set temperature model in logprob calculation
-    seq_out=startString
-    h,C = model.init_cell(1)
-    # First, prep the cell with our starting sequence
-    for i in range(len(startString)):
-        charId=torch.tensor(dataset._char_to_ix[startString[i]]).to(device)
-        logprobs,h,C = model(charId,h,C)
-    # Now, run the cell independently (its output is fed back into the cell to self-generate)
-    for i in range(length-len(startString)):
-        probs = torch.exp(logprobs)
-        predchar = torch.multinomial(probs.squeeze(),1)
-        if predchar.item()==1:
-            seq_out+='+'
-        else:
-            seq_out+=dataset._ix_to_char[predchar.item()]
-        startId=predchar
-        logprobs,h,C = model(startId,h,C)
-    model.train()
-    return seq_out
 
 def test(config):
     # Initialize the device which to run the model on
@@ -94,17 +57,24 @@ def test(config):
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
     #checkpoint=torch.load("saved_model.tar")
-    checkpoint=torch.load("AnnaK_607.tar")
+    checkpoint=torch.load("AnnaK_0.55.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
+    accuracy=testAccuracyLSTM(dataset,data_loader,model,config,device)
 
-    startStr='anna'
-    seq_out=generateSequenceGreedy(dataset,model,device,length=100,startString=startStr)
-    print('Example sequence started with [',startStr,']:',seq_out)
-    temp=1
-    seq_out=generateSequenceRandom(temp,dataset,model,device,length=100,startString=startStr)
-    print('Temperature=',temp,'- Example sequence started with [',startStr,']:',seq_out)
+    startStr='Anna'
+    print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
+    print('# Test accuracy:',accuracy)
+    print('# Self generated sentences, start string = Anna')
+    print('#')
+    print('# Greedy sampling           :',generateSequenceGreedy(dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=0.01:',generateSequenceRandom(0.01,dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=0.10:',generateSequenceRandom(0.5,dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=0.50:',generateSequenceRandom(0.5,dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=1.50:',generateSequenceRandom(1.5,dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=2.00:',generateSequenceRandom(2.0,dataset,model,device,length=100,startString=startStr))
+    print('#')
     return
 ###############################################################################
 ###############################################################################
