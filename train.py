@@ -95,13 +95,22 @@ def train(config):
             'accuracy' : accuracy
             }, "saved_model.tar")
             if accuracy > selfGenTHRES:
-                selfGenTHRES+=0.05
-                startStr='anna'
-                seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+                selfGenTHRES+=0.025
+                startStr1='anna'
+                startStr2='what'
+                startStr3='when'
+                startStr4='how'
+                seq_out1=generateSequence(dataset,model,device,length=100,startString=startStr1)
+                seq_out2=generateSequence(dataset,model,device,length=100,startString=startStr2)
+                seq_out3=generateSequence(dataset,model,device,length=100,startString=startStr3)
+                seq_out4=generateSequence(dataset,model,device,length=100,startString=startStr4)
                 print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
                 print('# New highest accuracy:',accuracy)
                 print('#')
-                print('# Example sequence started with',startStr,':',seq_out)
+                print('# Example sequence started with',startStr1,':',seq_out1)
+                print('# Example sequence started with',startStr2,':',seq_out2)
+                print('# Example sequence started with',startStr3,':',seq_out3)
+                print('# Example sequence started with',startStr4,':',seq_out4)
                 print('#')
                 print('##########################################################')
         # Just for time measurement

@@ -73,9 +73,16 @@ def test(config):
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
+    model.temp=1
     startStr='anna'
     seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
     print('Example sequence started with',startStr,':',seq_out)
+    
+    model.temp=2
+    startStr='anna'
+    seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+    print('Example sequence started with',startStr,':',seq_out)
+    
     return
 ###############################################################################
 ###############################################################################
