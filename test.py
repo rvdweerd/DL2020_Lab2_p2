@@ -102,7 +102,7 @@ def test(config):
     startStr='anna'
     seq_out=generateSequenceGreedy(dataset,model,device,length=100,startString=startStr)
     print('Example sequence started with [',startStr,']:',seq_out)
-    temp=3
+    temp=1
     seq_out=generateSequenceRandom(temp,dataset,model,device,length=100,startString=startStr)
     print('Temperature=',temp,'- Example sequence started with [',startStr,']:',seq_out)
     return
