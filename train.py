@@ -35,7 +35,6 @@ from utils import *
 
 ###############################################################################
 
-
 def train(config):
     # Initialize the device which to run the model on
     device = torch.device(config.device)
@@ -57,6 +56,7 @@ def train(config):
     optimizer = optim.AdamW(model.parameters(),config.learning_rate)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=config.learning_rate_step,gamma=config.learning_rate_decay)
 
+    selfGenTHRES=0
     maxTrainAcc=0
     acc_plt=[]
     loss_plt=[]
@@ -94,13 +94,16 @@ def train(config):
             'loss': loss,
             'accuracy' : accuracy
             }, "saved_model.tar")
-            startStr='anna'
-            seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
-            print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
-            print('#')
-            print('# Example sequence started with',startStr,':',seq_out)
-            print('#')
-            print('##########################################################')
+            if accuracy > selfGenTHRES:
+                selfGenTHRES+=0.05
+                startStr='anna'
+                seq_out=generateSequence(dataset,model,device,length=100,startString=startStr)
+                print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
+                print('# New highest accuracy:',accuracy)
+                print('#')
+                print('# Example sequence started with',startStr,':',seq_out)
+                print('#')
+                print('##########################################################')
         # Just for time measurement
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
