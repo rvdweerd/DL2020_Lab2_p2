@@ -16,12 +16,10 @@ from torch.utils.data import DataLoader
 from dataset import TextDataset
 from model import TextGenerationModel
 
+# Utility Functions
 from utils import *
+
 # This demo file loads a pre-trained SLTM model, tests its accuracy and produces self-generated sentences
-
-
-
-
 def test(config):
     seed=config.seed
     np.random.seed(seed)
@@ -36,16 +34,15 @@ def test(config):
     #device = torch.device('cpu')
 
     # Initialize the dataset and data loader (note the +1)
-    #dataset = TextDataset(filename="./assets/book_NL_tolstoy_anna_karenina.txt",seq_length=30)  
     dataset = TextDataset(filename=config.txt_file,seq_length=30)  
     data_loader = DataLoader(dataset, 32)
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
     if device.type=='cpu':
-        checkpoint=torch.load("saved_model.tar")
+        checkpoint=torch.load("AnnaK_0.48_cpu.tar")
     else:
-        checkpoint=torch.load("AnnaK_0.55.tar")
+        checkpoint=torch.load("AnnaK_0.59_cuda.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
