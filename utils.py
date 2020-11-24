@@ -51,12 +51,12 @@ def getTestAccuracy(dataset,data_loader,model,config,device,numEvalBatches=100):
             X = torch.stack(x).to(device)    # (seq_len,bsize)
             T = torch.stack(t).to(device)
             h,C = model.init_cell(config.batch_size)
-            logprobs = model(X,h,C)          # (seq_len,bsize,voc_size)
+            logprobs,_,_ = model(X,h,C)          # (seq_len,bsize,voc_size)
             predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
             correct+=torch.sum(predchar==T).item()
             total+=(config.batch_size * config.seq_length)
         accuracy =correct / total
-    print('accuracy over ',numEvalBatches*config.batch_size,' sequences:',accuracy)
+    print('Test accuracy over ',numEvalBatches*config.batch_size,' sequences:',accuracy)
     model.train()
     return accuracy
 
@@ -110,8 +110,8 @@ def generateSequenceRandom(temp,dataset,model,device,length=10,startString='A'):
         logprobs,h,C = model(charId,h,C)
     # Now, run the cell independently (its output is fed back into the cell to self-generate)
     for i in range(length-len(startString)):
-        probs = torch.exp(logprobs)
-        predchar = torch.multinomial(probs.squeeze(),1)
+        probs = torch.exp(logprobs) # convert back to probs from logprobs
+        predchar = torch.multinomial(probs.squeeze(),1) # sample according to PMF
         if predchar.item()==1:
             seq_out+='+'
         else:

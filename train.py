@@ -165,6 +165,7 @@ def train(config):
             # https://github.com/pytorch/pytorch/pull/9655
             break
     print('Done training.')
+    Testaccuracy=getTestAccuracy(dataset,data_loader,model,config,device,200)
     pltLossAcc(loss_plt,acc_plt,config)
 
 ###############################################################################
@@ -192,8 +193,6 @@ if __name__ == "__main__":
                         help='Learning rate')
     parser.add_argument('--seed', type=int, default=42,
                         help='Seed')
-
-
 
     # It is not necessary to implement the following three params,
     # but it may help training.

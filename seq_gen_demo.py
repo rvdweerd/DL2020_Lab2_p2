@@ -19,29 +19,7 @@ from model import TextGenerationModel
 from utils import *
 # This demo file loads a pre-trained SLTM model, tests its accuracy and produces self-generated sentences
 
-def testAccuracyLSTM(dataset,data_loader,model,config,device):
-    # check model performance
-    correct=0
-    total=0
-    evalBatches=200
-    model.eval()
-    with torch.no_grad():
-        for i in range(evalBatches):
-            (x,t) = next(iter(data_loader))  # x and t are lists (len=seq_len) of tensors (bsize)
-            X = torch.stack(x).to(device)    # (seq_len,bsize)
-            T = torch.stack(t).to(device)
-            h,C = model.init_cell(config.batch_size)
-            logprobs,_,_ = model(X,h,C)          # (seq_len,bsize,voc_size)
-            predchar = torch.argmax(logprobs,dim=2) # (seq_len,bsize) the predicted characters: selected highest logprob for each sequence and example in the mini batch
-            correct+=torch.sum(predchar==T).item()
-            total+=(config.batch_size * config.seq_length)
-        accuracy =correct / total
-    print('accuracy over ',evalBatches*config.batch_size,' sequences:',accuracy)
-    model.train()
-    return accuracy
-    ####################
-    # End of tests
-    ####################
+
 
 
 def test(config):
@@ -64,12 +42,14 @@ def test(config):
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
-    #checkpoint=torch.load("saved_model.tar")
-    checkpoint=torch.load("AnnaK_0.55.tar")
+    if device.type=='cpu':
+        checkpoint=torch.load("saved_model.tar")
+    else:
+        checkpoint=torch.load("AnnaK_0.55.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
-    accuracy=testAccuracyLSTM(dataset,data_loader,model,config,device)
+    accuracy=getTestAccuracy(dataset,data_loader,model,config,device,200)
 
     startStr='Anna'
     print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
