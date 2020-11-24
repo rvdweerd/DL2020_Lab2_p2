@@ -68,8 +68,8 @@ def test(config):
 
     model=TextGenerationModel(config,dataset._vocab_size,device).to(device)
     
-    #checkpoint=torch.load("saved_model.tar")
-    checkpoint=torch.load("best_587.tar")
+    checkpoint=torch.load("saved_model.tar")
+    #checkpoint=torch.load("best_annaK_587.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
     testLSTM(dataset,data_loader,model,config,device)
@@ -94,6 +94,7 @@ if __name__ == "__main__":
                         help='Number of hidden units in the LSTM')
     parser.add_argument('--lstm_num_layers', type=int, default=2,
                         help='Number of LSTM layers in the model')
+    parser.add_argument('--lstm_temperature',type=int,default=1,help='temperature used in softmax')
 
     # Training params
     parser.add_argument('--batch_size', type=int, default=32,#64,
