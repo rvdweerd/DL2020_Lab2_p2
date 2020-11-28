@@ -48,15 +48,16 @@ def test(config):
     testLSTM(dataset,data_loader,model,config,device)
     accuracy=getTestAccuracy(dataset,data_loader,model,config,device,200)
 
-    startStr='Anna'
+    startStr=config.startstring
     print('########### SAMPLE SELF GENERATED SEQUENCE ###############')
     print('# Test accuracy:',accuracy)
     print('# Self generated sentences, start string = Anna')
     print('#')
     print('# Greedy sampling           :',generateSequenceGreedy(dataset,model,device,length=100,startString=startStr))
     print('# Random sampling, temp=0.01:',generateSequenceRandom(0.01,dataset,model,device,length=100,startString=startStr))
-    print('# Random sampling, temp=0.10:',generateSequenceRandom(0.5,dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=0.10:',generateSequenceRandom(0.1,dataset,model,device,length=100,startString=startStr))
     print('# Random sampling, temp=0.50:',generateSequenceRandom(0.5,dataset,model,device,length=100,startString=startStr))
+    print('# Random sampling, temp=1.00:',generateSequenceRandom(1.0,dataset,model,device,length=100,startString=startStr))
     print('# Random sampling, temp=1.50:',generateSequenceRandom(1.5,dataset,model,device,length=100,startString=startStr))
     print('# Random sampling, temp=2.00:',generateSequenceRandom(2.0,dataset,model,device,length=100,startString=startStr))
     print('#')
@@ -110,7 +111,8 @@ if __name__ == "__main__":
                         help='How often to sample from the model')
     parser.add_argument('--device', type=str, default=("cpu" if not torch.cuda.is_available() else "cuda"),
                         help="Device to run the model on.")
-
+    parser.add_argument('--startstring', type=str, default="Anna",
+                        help="Start string to prompt sentence generation.")
     # If needed/wanted, feel free to add more arguments
 
     config = parser.parse_args()
