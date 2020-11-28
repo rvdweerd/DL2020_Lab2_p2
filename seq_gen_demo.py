@@ -45,6 +45,7 @@ def test(config):
         checkpoint=torch.load("AnnaK_0.59_cuda.tar")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(model)
+    #model.numTrainableParameters()
     testLSTM(dataset,data_loader,model,config,device)
     accuracy=getTestAccuracy(dataset,data_loader,model,config,device,200)
 

@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
+import numpy as np
 import torch.nn as nn
 import torch
 
@@ -59,4 +59,12 @@ class TextGenerationModel(nn.Module):
         return h,C
 
     def numTrainableParameters(self):
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+        #return sum(p.numel() for p in self.parameters() if p.requires_grad)
+  
+        total = 0
+        for name, p in self.named_parameters():
+            total += np.prod(p.shape)
+            print("{:24s} {:12s} requires_grad={}".format(name, str(list(p.shape)), p.requires_grad))
+        print("\nTotal number of parameters: {}\n".format(total))
+        assert total == sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return total

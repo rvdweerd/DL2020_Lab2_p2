@@ -59,6 +59,7 @@ def train(config):
     print('device:',device.type)
     print('Model defined. Number of trainable params:',model.numTrainableParameters())
     print(model)
+    model.numTrainableParameters()
     testLSTM(dataset,data_loader,model,config,device)
     
     # Setup the loss and optimizer
